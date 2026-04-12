@@ -1,4 +1,4 @@
-import React, { MouseEvent, useEffect, createRef } from 'react';
+import React, { MouseEvent, createRef } from 'react';
 import { DataRecordValue, styled } from '@superset-ui/core';
 import { PluginChartFilterButtonProps, PluginChartFilterButtonStylesProps } from './types';
 
@@ -78,12 +78,6 @@ export default function PluginChartFilterButton(props: PluginChartFilterButtonPr
   } = props;
 
   const rootElem = createRef<HTMLDivElement>();
-
-
-  useEffect(() => {
-    const root = rootElem.current as HTMLElement;
-    console.log('Plugin element', root);
-  });
 
   const applyFilter = (phone: string | null, label?: string) => {
     const values = phone ? [phone] : [];
