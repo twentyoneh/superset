@@ -179,6 +179,8 @@ services:
       superset: "http://host.docker.internal:8088"
     ports:
       - "127.0.0.1:9000:9000"  # exposing the dynamic webpack dev server
+    extra_hosts:
+    - "host.docker.internal:host-gateway"
     container_name: superset_node
     command: ["/app/docker/docker-frontend.sh"]
     env_file:
