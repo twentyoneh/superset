@@ -55,7 +55,7 @@ services:
 
   superset:
     env_file:
-      - path: docker/.env # default
+      - path: docker/.env-non-dev # default
         required: true
       - path: docker/.env-local # optional override
         required: false
@@ -80,7 +80,7 @@ services:
       <<: *common-build
     command: ["/app/docker/docker-init.sh"]
     env_file:
-      - path: docker/.env # default
+      - path: docker/.env-non-dev # default
         required: true
       - path: docker/.env-local # optional override
         required: false
@@ -94,7 +94,7 @@ services:
     healthcheck:
       disable: true
     environment:
-      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-yes}"
+      SUPERSET_LOAD_EXAMPLES: "no"
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
 
   superset-worker:
@@ -103,7 +103,7 @@ services:
     container_name: superset_worker
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     env_file:
-      - path: docker/.env # default
+      - path: docker/.env-non-dev # default
         required: true
       - path: docker/.env-local # optional override
         required: false
@@ -128,7 +128,7 @@ services:
     container_name: superset_worker_beat
     command: ["/app/docker/docker-bootstrap.sh", "beat"]
     env_file:
-      - path: docker/.env # default
+      - path: docker/.env-non-dev # default
         required: true
       - path: docker/.env-local # optional override
         required: false
