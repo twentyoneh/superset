@@ -1,66 +1,180 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-import { ChartProps, TimeseriesDataRecord } from '@superset-ui/core';
+import { CurveType } from '../types';
 
-export default function transformProps(chartProps: ChartProps) {
-  /**
-   * This function is called after a successful response has been
-   * received from the chart data endpoint, and is used to transform
-   * the incoming data prior to being sent to the Visualization.
-   *
-   * The transformProps function is also quite useful to return
-   * additional/modified props to your data viz component. The formData
-   * can also be accessed from your PluginChartCustomChart.tsx file, but
-   * doing supplying custom props here is often handy for integrating third
-   * party libraries that rely on specific props.
-   *
-   * A description of properties in `chartProps`:
-   * - `height`, `width`: the height/width of the DOM element in which
-   *   the chart is located
-   * - `formData`: the chart data request payload that was sent to the
-   *   backend.
-   * - `queriesData`: the chart data response payload that was received
-   *   from the backend. Some notable properties of `queriesData`:
-   *   - `data`: an array with data, each row with an object mapping
-   *     the column/alias to its value. Example:
-   *     `[{ col1: 'abc', metric1: 10 }, { col1: 'xyz', metric1: 20 }]`
-   *   - `rowcount`: the number of rows in `data`
-   *   - `query`: the query that was issued.
-   *
-   * Please note: the transformProps function gets cached when the
-   * application loads. When making changes to the `transformProps`
-   * function during development with hot reloading, changes won't
-   * be seen until restarting the development server.
-   */
-  const { width, height, formData, queriesData } = chartProps;
-  const { boldText, headerFontSize, headerText } = formData;
-  const data = queriesData[0].data as TimeseriesDataRecord[];
+const METRIC_LABEL = '__value__';
 
-  console.log('formData via TransformProps.ts', formData);
+const DEFAULT_PALETTE = [
+  '#2563eb',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#06b6d4',
+  '#84cc16',
+  '#f97316',
+  '#ec4899',
+  '#64748b',
+];
+
+function toNumber(value: unknown): number {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+}
+
+function toDayString(value: unknown): string {
+  if (value == null) {
+    return '';
+  }
+
+  // timestamp в миллисекундах
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    if (!Number.isNaN(d.getTime())) {
+      return d.toISOString().slice(0, 10);
+    }
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString().slice(0, 10);
+  }
+
+  const raw = String(value).trim();
+  if (!raw) {
+    return '';
+  }
+
+  // строка вида 2026-04-03 00:00:00
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    return raw.slice(0, 10);
+  }
+
+  // fallback
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString().slice(0, 10);
+  }
+
+  return raw;
+}
+
+function buildColorMap(categories: string[]) {
+  return categories.reduce<Record<string, string>>((acc, category, index) => {
+    acc[category] = DEFAULT_PALETTE[index % DEFAULT_PALETTE.length];
+    return acc;
+  }, {});
+}
+
+export default function transformProps(chartProps: any) {
+  const { width, height, queriesData, formData } = chartProps;
+
+  const rows = (queriesData?.[0]?.data ?? []) as Record<string, unknown>[];
+
+  // В transformProps у вас formData приходит в camelCase
+  const dateColumn = formData.dateColumn || formData.date_column;
+  const categoryColumn = formData.categoryColumn || formData.category_column;
+  const valueColumn = formData.valueColumn || formData.value_column;
+
+  console.log('transformProps rows:', rows);
+  console.log('transformProps first row:', rows[0]);
+  console.log('transformProps formData:', formData);
+  console.log('dateColumn:', dateColumn);
+  console.log('categoryColumn:', categoryColumn);
+  console.log('valueColumn:', valueColumn);
+
+  if (!rows.length || !dateColumn || !categoryColumn) {
+    return {
+      width,
+      height,
+      data: [],
+      colorMap: {},
+      showArea: Boolean(formData.showArea ?? formData.show_area ?? true),
+      showMarkers: Boolean(formData.showMarkers ?? formData.show_markers ?? false),
+      curveType: (formData.curveType || formData.curve_type || 'monotone') as CurveType,
+    };
+  }
+
+  const firstRow = rows[0] ?? {};
+
+  const resolvedMetricKey =
+    METRIC_LABEL in firstRow
+      ? METRIC_LABEL
+      : valueColumn && valueColumn in firstRow
+        ? valueColumn
+        : Object.keys(firstRow).find(
+            key =>
+              key !== dateColumn &&
+              key !== categoryColumn &&
+              typeof firstRow[key] === 'number',
+          ) || METRIC_LABEL;
+
+  console.log('resolvedMetricKey:', resolvedMetricKey);
+
+  const grouped = new Map<
+    string,
+    {
+      day: string;
+      total: number;
+      breakdownMap: Map<string, number>;
+    }
+  >();
+
+  const categories = new Set<string>();
+
+  rows.forEach(row => {
+    const rawDay = row[dateColumn];
+    const rawCategory = row[categoryColumn];
+    const rawValue = row[resolvedMetricKey];
+
+    const day = toDayString(rawDay);
+    const category = String(rawCategory ?? 'Unknown');
+    const value = toNumber(rawValue);
+
+    if (!day) {
+      return;
+    }
+
+    categories.add(category);
+
+    if (!grouped.has(day)) {
+      grouped.set(day, {
+        day,
+        total: 0,
+        breakdownMap: new Map<string, number>(),
+      });
+    }
+
+    const current = grouped.get(day)!;
+    current.total += value;
+    current.breakdownMap.set(
+      category,
+      (current.breakdownMap.get(category) ?? 0) + value,
+    );
+  });
+
+  const categoryList = Array.from(categories).sort((a, b) =>
+    a.localeCompare(b, 'ru'),
+  );
+
+  const colorMap = buildColorMap(categoryList);
+
+  const data = Array.from(grouped.values())
+    .map(item => ({
+      day: item.day,
+      total: item.total,
+      breakdown: Array.from(item.breakdownMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value),
+    }))
+    .sort((a, b) => a.day.localeCompare(b.day));
+
+  console.log('final chart data:', data);
 
   return {
     width,
     height,
     data,
-    // and now your control data, manipulated as needed, and passed through as props!
-    boldText,
-    headerFontSize,
-    headerText,
+    colorMap,
+    showArea: Boolean(formData.showArea ?? formData.show_area ?? true),
+    showMarkers: Boolean(formData.showMarkers ?? formData.show_markers ?? false),
+    curveType: (formData.curveType || formData.curve_type || 'monotone') as CurveType,
   };
 }

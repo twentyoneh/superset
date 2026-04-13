@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "plugin-chart-custom-chart": "file:custom-plugins/plugin-chart-custom-chart",
+    "recharts": "^3.8.1"
+  }
+}

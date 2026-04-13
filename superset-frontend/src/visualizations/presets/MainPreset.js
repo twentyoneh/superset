@@ -22,7 +22,7 @@ import {
   Preset,
   VizType,
 } from '@superset-ui/core';
-import { PluginChartCustomChart } from 'plugin-chart-custom-chart';
+import { PluginChartCustomChartPlugin } from 'plugin-chart-custom-chart';
 import { PluginChartFilterButton } from 'plugin-chart-filter-button';
 import { SupersetPluginChartHelloWorld } from 'superset-plugin-chart-hello-world';
 import CalendarChartPlugin from '@superset-ui/legacy-plugin-chart-calendar';
@@ -100,7 +100,7 @@ export default class MainPreset extends Preset {
       name: 'Legacy charts',
       presets: [new DeckGLChartPreset()],
       plugins: [
-        new PluginChartCustomChart().configure({ key: 'plugin-chart-custom-chart' }),
+        new PluginChartCustomChartPlugin().configure({key: 'plugin-chart-custom-chart',}),
         new PluginChartFilterButton().configure({ key: 'plugin-chart-filter-button' }),
 	      new SupersetPluginChartHelloWorld().configure({ key: 'ext-hello-world' }),
         new BigNumberChartPlugin().configure({ key: VizType.BigNumber }),

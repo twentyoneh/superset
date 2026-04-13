@@ -1,89 +1,241 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-import React, { useEffect, createRef } from 'react';
-import { styled } from '@superset-ui/core';
-import { PluginChartCustomChartProps, PluginChartCustomChartStylesProps } from './types';
+import React from 'react';
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Area,
+  Line,
+} from 'recharts';
 
-// The following Styles component is a <div> element, which has been styled using Emotion
-// For docs, visit https://emotion.sh/docs/styled
+import {
+  BreakdownItem,
+  SmoothEventTimelineProps,
+  TimelinePoint,
+} from './types';
 
-// Theming variables are provided for your use via a ThemeProvider
-// imported from @superset-ui/core. For variables available, please visit
-// https://github.com/apache-superset/superset-ui/blob/master/packages/superset-ui-core/src/style/index.ts
+const LINE_COLOR = '#3b82f6';
+const AREA_COLOR = '#3b82f6';
 
-const Styles = styled.div<PluginChartCustomChartStylesProps>`
-  background-color: ${({ theme }) => theme.colors.secondary.light2};
-  padding: ${({ theme }) => theme.gridUnit * 4}px;
-  border-radius: ${({ theme }) => theme.gridUnit * 2}px;
-  height: ${({ height }) => height}px;
-  width: ${({ width }) => width}px;
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('ru-RU').format(value);
+}
 
-  h3 {
-    /* You can use your props to control CSS! */
-    margin-top: 0;
-    margin-bottom: ${({ theme }) => theme.gridUnit * 3}px;
-    font-size: ${({ theme, headerFontSize }) =>
-      theme.typography.sizes[headerFontSize]}px;
-    font-weight: ${({ theme, boldText }) =>
-      theme.typography.weights[boldText ? 'bold' : 'normal']};
+function BreakdownRow({
+  item,
+  color,
+}: {
+  item: BreakdownItem;
+  color?: string;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        gap: 16,
+        marginBottom: 6,
+        alignItems: 'center',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          minWidth: 0,
+          flex: 1,
+        }}
+      >
+        <span
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: '50%',
+            background: color || '#94a3b8',
+            display: 'inline-block',
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+          title={item.name}
+        >
+          {item.name}
+        </span>
+      </div>
+
+      <strong>{formatNumber(item.value)}</strong>
+    </div>
+  );
+}
+
+function CustomTooltip({
+  active,
+  payload,
+  label,
+  colorMap,
+}: {
+  active?: boolean;
+  payload?: readonly any[];
+  label?: string | number;
+  colorMap: Record<string, string>;
+}) {
+  if (!active || !payload?.length) {
+    return null;
   }
 
-  pre {
-    height: ${({ theme, headerFontSize, height }) =>
-      height - theme.gridUnit * 12 - theme.typography.sizes[headerFontSize]}px;
+  const point = payload[0]?.payload as TimelinePoint | undefined;
+  if (!point) {
+    return null;
   }
-`;
-
-/**
- * ******************* WHAT YOU CAN BUILD HERE *******************
- *  In essence, a chart is given a few key ingredients to work with:
- *  * Data: provided via `props.data`
- *  * A DOM element
- *  * FormData (your controls!) provided as props by transformProps.ts
- */
-
-export default function PluginChartCustomChart(props: PluginChartCustomChartProps) {
-  // height and width are the height and width of the DOM element as it exists in the dashboard.
-  // There is also a `data` prop, which is, of course, your DATA 🎉
-  const { data, height, width } = props;
-
-  const rootElem = createRef<HTMLDivElement>();
-
-  // Often, you just want to access the DOM and do whatever you want.
-  // Here, you can do that with createRef, and the useEffect hook.
-  useEffect(() => {
-    const root = rootElem.current as HTMLElement;
-    console.log('Plugin element', root);
-  });
-
-  console.log('Plugin props', props);
 
   return (
-    <Styles
-      ref={rootElem}
-      boldText={props.boldText}
-      headerFontSize={props.headerFontSize}
-      height={height}
-      width={width}
+    <div
+      style={{
+        background: '#fff',
+        border: '1px solid #d9d9d9',
+        borderRadius: 8,
+        padding: 12,
+        minWidth: 240,
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)',
+      }}
     >
-      <h3>{props.headerText}</h3>
-      <pre>${JSON.stringify(data, null, 2)}</pre>
-    </Styles>
+      <div
+        style={{
+          fontWeight: 700,
+          marginBottom: 10,
+        }}
+      >
+        {String(label ?? '')}
+      </div>
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: 10,
+          paddingBottom: 10,
+          borderBottom: '1px solid #eee',
+        }}
+      >
+        <span>Всего</span>
+        <strong>{formatNumber(point.total)}</strong>
+      </div>
+
+      <div>
+        {point.breakdown.map(item => (
+          <BreakdownRow
+            key={item.name}
+            item={item}
+            color={colorMap[item.name]}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default function PluginChartCustomChart({
+  width,
+  height,
+  data,
+  colorMap,
+  showArea,
+  showMarkers,
+  curveType,
+}: SmoothEventTimelineProps) {
+  if (!data.length) {
+    return (
+      <div
+        style={{
+          width,
+          height,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#64748b',
+          fontSize: 14,
+        }}
+      >
+        Нет данных
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ width, height }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart
+          data={data}
+          margin={{ top: 12, right: 18, bottom: 8, left: 6 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+
+          <XAxis
+            dataKey="day"
+            minTickGap={24}
+            tick={{ fontSize: 12 }}
+          />
+
+          <YAxis
+            allowDecimals={false}
+            tickFormatter={value => formatNumber(Number(value))}
+            tick={{ fontSize: 12 }}
+          />
+
+          <Tooltip
+            content={({ active, payload, label }) => (
+              <CustomTooltip
+                active={active}
+                payload={payload}
+                label={label}
+                colorMap={colorMap}
+              />
+            )}
+          />
+
+          {showArea && (
+            <Area
+              type={curveType}
+              dataKey="total"
+              stroke="none"
+              fill={AREA_COLOR}
+              fillOpacity={0.14}
+              isAnimationActive
+            />
+          )}
+
+          <Line
+            type={curveType}
+            dataKey="total"
+            stroke={LINE_COLOR}
+            strokeWidth={2}
+            dot={
+              showMarkers
+                ? {
+                    r: 3,
+                    fill: LINE_COLOR,
+                    strokeWidth: 0,
+                  }
+                : false
+            }
+            activeDot={{
+              r: 5,
+              fill: LINE_COLOR,
+              strokeWidth: 0,
+            }}
+            connectNulls
+            isAnimationActive
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

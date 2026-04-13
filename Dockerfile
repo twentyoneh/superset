@@ -75,6 +75,11 @@ RUN npm i --force && npm run build
 WORKDIR /app/superset-frontend  
 RUN npm i -S /app/custom-plugins/plugin-chart-filter-button  
 
+WORKDIR /app/custom-plugins/plugin-chart-custom-chart
+RUN npm i --force && npm run build  
+WORKDIR /app/superset-frontend  
+RUN npm i -S /app/custom-plugins/plugin-chart-custom-chart
+
 RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
     --mount=type=cache,target=/root/.cache \
