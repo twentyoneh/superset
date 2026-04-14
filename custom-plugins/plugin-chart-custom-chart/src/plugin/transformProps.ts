@@ -15,6 +15,21 @@ const DEFAULT_PALETTE = [
   '#64748b',
 ];
 
+function rgbaToCss(
+  color?: { r?: number; g?: number; b?: number; a?: number } | string | null,
+  fallback = 'rgba(59,130,246,1)',
+) {
+  if (!color) return fallback;
+  if (typeof color === 'string') return color;
+
+  const r = color.r ?? 59;
+  const g = color.g ?? 130;
+  const b = color.b ?? 246;
+  const a = color.a ?? 1;
+
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 function toNumber(value: unknown): number {
   const num = Number(value);
   return Number.isFinite(num) ? num : 0;
@@ -176,5 +191,7 @@ export default function transformProps(chartProps: any) {
     showArea: Boolean(formData.showArea ?? formData.show_area ?? true),
     showMarkers: Boolean(formData.showMarkers ?? formData.show_markers ?? false),
     curveType: (formData.curveType || formData.curve_type || 'monotone') as CurveType,
+    lineColor: rgbaToCss(formData.lineColor ?? formData.line_color, 'rgba(59,130,246,1)'),
+    areaColor: rgbaToCss(formData.areaColor ?? formData.area_color, 'rgba(59,130,246,0.15)'),
   };
 }

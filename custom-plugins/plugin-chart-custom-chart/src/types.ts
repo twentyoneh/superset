@@ -21,6 +21,8 @@ export type SmoothEventTimelineProps = {
   showArea: boolean;
   showMarkers: boolean;
   curveType: CurveType;
+  lineColor: string;
+  areaColor: string;
 };
 
 export type SmoothEventTimelineFormData = {

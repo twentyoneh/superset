@@ -93,6 +93,28 @@ const config: ControlPanelConfig = {
       controlSetRows: [
         [
           {
+            name: 'line_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Line color'),
+              description: t('Color of the main line'),
+              default: { r: 59, g: 130, b: 246, a: 1 },
+              renderTrigger: true,
+            },
+          },
+          {
+            name: 'area_color',
+            config: {
+              type: 'ColorPickerControl',
+              label: t('Area color'),
+              description: t('Color of the filled area'),
+              default: { r: 59, g: 130, b: 246, a: 0.15 },
+              renderTrigger: true,
+            },
+          },
+        ],
+        [
+          {
             name: 'show_area',
             config: {
               type: 'CheckboxControl',

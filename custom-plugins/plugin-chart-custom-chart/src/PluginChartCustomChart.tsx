@@ -16,9 +16,6 @@ import {
   TimelinePoint,
 } from './types';
 
-const LINE_COLOR = '#3b82f6';
-const AREA_COLOR = '#3b82f6';
-
 function formatNumber(value: number) {
   return new Intl.NumberFormat('ru-RU').format(value);
 }
@@ -150,6 +147,8 @@ export default function PluginChartCustomChart({
   showArea,
   showMarkers,
   curveType,
+  lineColor,
+  areaColor,
 }: SmoothEventTimelineProps) {
   if (!data.length) {
     return (
@@ -172,24 +171,10 @@ export default function PluginChartCustomChart({
   return (
     <div style={{ width, height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart
-          data={data}
-          margin={{ top: 12, right: 18, bottom: 8, left: 6 }}
-        >
+        <ComposedChart data={data} margin={{ top: 12, right: 18, bottom: 8, left: 6 }}>
           <CartesianGrid strokeDasharray="3 3" />
-
-          <XAxis
-            dataKey="day"
-            minTickGap={24}
-            tick={{ fontSize: 12 }}
-          />
-
-          <YAxis
-            allowDecimals={false}
-            tickFormatter={value => formatNumber(Number(value))}
-            tick={{ fontSize: 12 }}
-          />
-
+          <XAxis dataKey="day" minTickGap={24} tick={{ fontSize: 12 }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
           <Tooltip
             content={({ active, payload, label }) => (
               <CustomTooltip
@@ -206,8 +191,7 @@ export default function PluginChartCustomChart({
               type={curveType}
               dataKey="total"
               stroke="none"
-              fill={AREA_COLOR}
-              fillOpacity={0.14}
+              fill={areaColor}
               isAnimationActive
             />
           )}
@@ -215,20 +199,20 @@ export default function PluginChartCustomChart({
           <Line
             type={curveType}
             dataKey="total"
-            stroke={LINE_COLOR}
+            stroke={lineColor}
             strokeWidth={2}
             dot={
               showMarkers
                 ? {
                     r: 3,
-                    fill: LINE_COLOR,
+                    fill: lineColor,
                     strokeWidth: 0,
                   }
                 : false
             }
             activeDot={{
               r: 5,
-              fill: LINE_COLOR,
+              fill: lineColor,
               strokeWidth: 0,
             }}
             connectNulls
